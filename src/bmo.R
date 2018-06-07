@@ -23,7 +23,8 @@ args <- parse_args(opt_parser)
 # setwd("/lab/work/albanus/islet_BMO_redo")
 # args$f1 <- "negative_binomials/abe1388/ATF7_1.bed.gz"
 # args$f2 <- "raw_signal/abe1388/co-occurring/ATF7_1.bed"
-# args$output <- "test_ATF"
+# args$name <- "ATF7_test"
+# args$output <- "tmp"
 # args$parallel <- 4
 
 # Print function
@@ -46,9 +47,9 @@ pvals <- pnbinom(co_occurring_motifs, size = parameters_fitted['size'],
 
 # Make main data table
 bmo_df <- data.frame(df_nb[,1:6], 
-                     atac_score  = df_motifs$V7,
+                     tag_score   = df_motifs$V7,
                      motif_score = df_motifs$V8,
-                     tag_pval    = 10^(df_nb$V9 * -1),
+                     tag_pval    = 10 ^ (-df_nb$V9),
                      motif_pval  = pvals)
 
 # Combine p-values with sumz (Liptak's method)
@@ -70,14 +71,18 @@ called_sig <- sum(bmo_df$adj_pval <= 0.05)
 # Make output bed files
 sys_print("Writing output...")
 bmo_df$score <- -log10(bmo_df$adj_pval)
-bmo_df$bound <- bmo_df$adj_pval <= 0.05
+bmo_df$bound <- as.integer(bmo_df$adj_pval <= 0.05)
 
 cols_to_print <- c(paste0("V", 1:4), "score", "V6")
-bmo_bound <- bmo_df[bmo_df$bound, cols_to_print]
+bmo_bound <- bmo_df[bmo_df$bound == 1, cols_to_print]
 
 outfile1 <- paste0(args$output, "/all/", args$name, ".all.bed")
 outfile2 <- paste0(args$output, "/bound/", args$name, ".bound.bed")
-write.table(bmo_all, outfile1, quote = F, col.names = F, row.names = F, sep = "\t")
+
+dir.create(file.path(args$output, "bound"), showWarnings = FALSE)
+dir.create(file.path(args$output, "all"), showWarnings = FALSE)
+
+write.table(bmo_df, outfile1, quote = F, col.names = F, row.names = F, sep = "\t")
 write.table(bmo_bound, outfile2, quote = F, col.names = F, row.names = F, sep = "\t")
 
 sys_print("All done!")
