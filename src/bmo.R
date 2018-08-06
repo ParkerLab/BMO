@@ -21,9 +21,9 @@ opt_parser <- OptionParser(option_list = option_list)
 args <- parse_args(opt_parser)
 
 # setwd("/lab/work/albanus/islet_BMO_redo")
-# args$f1 <- "negative_binomials/abe1388/ATF7_1.bed.gz"
-# args$f2 <- "raw_signal/abe1388/co-occurring/ATF7_1.bed"
-# args$name <- "ATF7_test"
+# args$f1 <- "negative_binomials/gm12878/ALX1_1.bed.gz"
+# args$f2 <- "raw_signal/gm12878/co-occurring/ALX1_1.bed"
+# args$name <- "ALX1_1_test"
 # args$output <- "tmp"
 # args$parallel <- 4
 
@@ -51,6 +51,12 @@ bmo_df <- data.frame(df_nb[,1:6],
                      motif_score = df_motifs$V8,
                      tag_pval    = 10 ^ (-df_nb$V9),
                      motif_pval  = pvals)
+
+# Add a pseudo-count for zero pvalues using R's maximum precision
+if(min(bmo_df$tag_pval) == 0){
+    sys_print("I found p=0 in at least one instance. Adding 2e-308 to all p-values.")
+    bmo_df$tag_pval <- bmo_df$tag_pval + 2e-308
+}
 
 # Combine p-values with sumz (Liptak's method)
 sys_print(paste("Calculating p-values with", args$parallel, "core(s)..."))
