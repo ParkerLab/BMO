@@ -27,6 +27,11 @@ args <- parse_args(opt_parser)
 # args$output <- "tmp"
 # args$parallel <- 4
 
+if(!is.null(args$output)){
+    dir.create(args$output,showWarnings = F)    
+}
+
+
 # Print function
 sys_print <- function(x){write(x, stdout())}
 
@@ -59,16 +64,23 @@ if(min(bmo_df$tag_pval) == 0){
 }
 
 # Combine p-values with sumz (Liptak's method)
-sys_print(paste("Calculating p-values with", args$parallel, "core(s)..."))
 combine_p <- function(x){
     x <- as.numeric(x)
     combined_pval <- sumz(x)$p
     return(combined_pval)
 }
 
-cl <- makeCluster(args$parallel, type = 'FORK')
-bmo_df$combined_p <- parApply(cl, bmo_df[,c("tag_pval", "motif_pval")], 1, combine_p)
-stopCluster(cl)
+if(args$parallel > 1){
+    sys_print(paste("Calculating p-values with", args$parallel, "cores..."))
+    sys_print("Warning: parallelization is not recommended when running multiple BMO instances in the same machine.")
+    cl <- makeCluster(args$parallel, type = 'FORK')
+    bmo_df$combined_p <- parApply(cl, bmo_df[,c("tag_pval", "motif_pval")], 1, combine_p)
+    stopCluster(cl)    
+} else {
+    sys_print(paste("Calculating p-values with", args$parallel, "core..."))
+    bmo_df$combined_p <- apply(bmo_df[,c("tag_pval", "motif_pval")], 1, combine_p)
+}
+
 
 # Adjust p-values
 bmo_df$adj_pval <- p.adjust(bmo_df$combined_p, method = 'BY')
