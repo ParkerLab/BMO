@@ -8,6 +8,7 @@
 
 f="$1"
 maxDist="$2"
+BMO_DIR="$3"
 
 midpointBed="${BMO_DIR}/src/midpointBed.sh"
 
