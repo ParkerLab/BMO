@@ -1,0 +1,16 @@
+bmo_dir: /path/to/bmo # BMO directory
+motif_dir: path/to/motif_bed_files
+motif_ext: bed.gz # motif extension in the motif_dir - no first dot
+motif_file: motifs_to_process.txt # no paths or extensions - only motif name
+results: work
+use_shm: False # Should we use /dev/shm to avoid I/O bottleneck?
+shm_dir: /dev/shm/bmo_tmp # Where will we operate on shm?
+samples:
+    # Add as many samples as necessary, but keep names unique
+    # All bam files need to be indexed!
+    sample1:
+        bamfile: path/to/sample1.no_dup.high_quality.bam
+        peakfile: path/to/sample1_peaks.broadPeak.noblacklist.bed
+    sample2:
+        bamfile: path/to/sample2.no_dup.high_quality.bam
+        peakfile: path/to/sample2_peaks.broadPeak.noblacklist.bed
