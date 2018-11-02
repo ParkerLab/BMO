@@ -8,7 +8,7 @@ rule push_bam_to_shm:
         bam = temporary(os.path.join(config["shm_dir"], "{sample}.pruned.bam")),
         bai = temporary(os.path.join(config["shm_dir"], "{sample}.pruned.bam.bai"))
     shell:
-        "ionice -c2 -n7 cp {input.bam} {output.bam} && samtools index {output.bam}"
+        "{IONICE} cp {input.bam} {output.bam} && samtools index {output.bam}"
 
 rule push_motif_to_shm:
     input:
@@ -16,7 +16,7 @@ rule push_motif_to_shm:
     output:
         temporary(os.path.join(config["shm_dir"], "motifs", "{motif}.bed.gz"))
     shell:
-        "ionice -c2 -n7 cp {input} {output}"
+        "{IONICE} cp {input} {output}"
 
 rule measure_raw_signal:
     input:
