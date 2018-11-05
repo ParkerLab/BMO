@@ -1,0 +1,12 @@
+bmo_dir: .
+motif_dir: examples
+motif_ext: bed.gz
+motif_file: examples/motifs.txt
+results: work
+ionice: ""
+use_shm: False
+shm_dir: 
+samples:
+    sample1:
+      bamfile: examples/sample1.bam
+      peakfile: examples/sample1.peaks.bed.gz
