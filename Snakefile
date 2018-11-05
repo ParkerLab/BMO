@@ -23,8 +23,10 @@ def get_peaks(sample):
     peakfile = config["samples"][sample]["peakfile"]
     return peakfile
 
-
-IONICE = config["ionice"]
+if config["ionice"] is None:
+    IONICE = ""
+else:
+    IONICE = config["ionice"]
 
 ###
 ## PIPELINE
