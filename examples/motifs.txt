@@ -1,2 +1,2 @@
-motif1
-motif2
+example_CTCF_known2
+example_ELF1_known1

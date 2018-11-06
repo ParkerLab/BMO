@@ -7,6 +7,6 @@ ionice: ""
 use_shm: False
 shm_dir: 
 samples:
-    sample1:
-      bamfile: examples/sample1.bam
-      peakfile: examples/sample1.peaks.bed.gz
+    example_1:
+      bamfile: examples/example_buenrostro_rep1.subsampled.bam
+      peakfile: examples/example_peaks.bed.gz
