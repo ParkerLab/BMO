@@ -23,7 +23,7 @@ BMO (pronounced *beemo* - yes, that BMO) is an algorithm to predict TF binding f
 
 
 # Installation
-From your machine run the command below wherever you want BMO's main directory to be (*e.g.* `~/software`).
+From your machine run the command below wherever you want BMO's main directory to be )(*e.g.* `~/software`).
 ```sh
 git clone https://github.com/ParkerLab/BMO.git
 ```
