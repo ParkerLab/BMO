@@ -1,7 +1,7 @@
 # ParkerLab BMO
 
 # Overview
-BMO (pronounced *beemo* - yes, that BMO) is an algorithm to predict TF binding from ATAC-seq data without using footprints. BMO uses negative binomial models of ATAC-seq fragments and number of co-occurring motifs to determine the likelihood of a given motif instance being bound.
+BMO (pronounced *beemo*) is an algorithm to predict TF binding from ATAC-seq data without using footprints. BMO uses negative binomial models of ATAC-seq fragments and number of co-occurring motifs to determine the likelihood of a given motif instance being bound.
 
 **Disclaimer**: BMO has only been tested with paired-end ATAC-seq data.
 
@@ -32,8 +32,11 @@ git clone https://github.com/ParkerLab/BMO.git
 ## Using Snakemake
 We strongly recommend you run BMO using [Snakemake](https://snakemake.readthedocs.io), an extremely powerful tool for running reproducible pipelines. 
 
-### 1) Activate BMO conda environment (optional)
-If you do not have Snakemake installed, don't have administrative privileges in your machine/cluster, or don't want to overwrite anything in your main environment, we provide a separate [conda environment](https://conda.io/docs/user-guide/tasks/manage-environments.html) with everything you need to get started (it's actually just a barebones python 3 with Snakemake and R installed). To create the environment, run the command below from wherever you cloned BMO:
+### 1) Create and activate BMO conda environment (optional)
+**Requirements**: Having a working [Anaconda](https://docs.anaconda.com/anaconda/install/) or [Miniconda](https://conda.io/docs/user-guide/install/index.html) installation in your system.
+
+#### Using the provided conda environment
+If you do not have Snakemake installed, don't have administrative privileges in your machine/cluster, or don't want to overwrite anything in your main environment, we provide a separate [conda environment](https://conda.io/docs/user-guide/tasks/manage-environments.html) with everything you need to get started (it's actually just a barebones python 3 with Snakemake, pysam, and R installed). To create the environment, run the command below from wherever you cloned BMO:
 ```sh
 conda env create -f conda/environment.yml
 ```
@@ -49,18 +52,27 @@ Rscript conda/install_R_dependencies.R
 ```
 You are now ready to run BMO.
 
-### 2) Running BMO pipeline in Snakemake
-To execute the pipeline, you need to copy both the `Snakefile` and `input/config.yaml` to wherever you want to run the analysis in your machine/cluster and then update the config file as described in the next section. After that, just run the code below and Snakemake will take care of the rest. Simple as that.
-
+#### Or manually creating your own environment
+Some users reported an [issue](https://github.com/ContinuumIO/anaconda-issues/issues/9480) with conda where the environment creation from a file fails with a `ResolvePackageNotFound` error. If you encountered this or any error trying to use the provided environment file, you can manually create BMO environment by running:
 ```
-snakemake [-j {threads}] [--resources io_limit={concurrency}] --configfile config.yaml
-```
-* Flags in [brackets] are optional.
-* **`{threads}`** is an integer value for the total number of cores Snakemake is allowed to use. if running on a HPC cluster, then set to 999 or some arbitrarily high value.
-* **`{concurrency}`** is also an integer, and determines the number of maximum I/O intensive jobs to run simultaneously (we recommend starting with 1-3 and keeping an eye on the `%iowait` column of `sar` to see how much your machine can handle). Alternatively, the high I/O jobs can be pushed to RAM or to an SSD partition by changing `use_shm: True` in the config file (see details in the next section). If using the latter option, then also add `shm_limit={shm_concurrency}` to the `--resources` call above, where `{shm_concurrency}` is an integer for the maximum number of concurring jobs when using the RAM/SSD partition. If either `io_limit` or `shm_limit` are not set, then all jobs will be submitted with no regards to maximum concurrency (which should not be an issue if running in a cluster).
+# Create and activate environment
+conda create --name BMO_env
+source activate BMO_env
 
-### 3) Setting up the Snakemake configuration file
-You can find the configuration file skeleton in `config/config.yaml`. Most fields should be self-explanatory, but let's go through all of them just in case:
+# Install Snakemake and pysam
+conda install -c bioconda -c conda-forge snakemake
+conda config --add channels defaults
+conda config --add channels conda-forge
+conda config --add channels bioconda
+conda install pysam
+
+# Install R and dependencies
+conda install r-essentials
+Rscript conda/install_R_dependencies.R
+```
+
+### 2) Setting up the Snakemake configuration file
+Our Snakemake pipeline makes use of a configuration file, which includes information of paths and input files. The template is located in `config/config.yaml`. Let's go through each of the fields:
 * **`bmo_dir`**: this is the folder where you cloned this repository.
 * **`motif_dir`**: path to your motif BED6 files.
 * **`motif_ext`**: extension associated with the motif files. Do not add a dot in the beginning (*e.g.* use `bed.gz` instead of `.bed.gz`).
@@ -72,6 +84,16 @@ You can find the configuration file skeleton in `config/config.yaml`. Most field
 * **`samples`**: information about each ATAC-seq experiment to be processed. The `bamfile` and `peakfile` fields under each sample handle are mandatory and point to the experiment's BAM and peak calls, respectively. Attention: make sure that the sample handles (main identation of each sample) are **unique**.
 
 IMPORTANT: Because the config is a [yaml](http://yaml.org) file, **make sure to maintain all the indentations as they appear** or unexpected behaviors may occurr.
+
+### 3) Running BMO pipeline in Snakemake
+To execute the pipeline, you need to copy both the `Snakefile` and `input/config.yaml` to wherever you want to run the analysis in your machine/cluster and then update the config file as described in the previous section. After that, just run the code below and Snakemake will take care of the rest. Simple as that.
+
+```
+snakemake [-j {threads}] [--resources io_limit={concurrency}] --configfile config.yaml
+```
+* Flags in [brackets] are optional.
+* **`{threads}`** is an integer value for the total number of cores Snakemake is allowed to use. if running on a HPC cluster, then set to 999 or some arbitrarily high value.
+* **`{concurrency}`** is also an integer, and determines the number of maximum I/O intensive jobs to run simultaneously (we recommend starting with 1-3 and keeping an eye on the `%iowait` column of `sar` to see how much your machine can handle). Alternatively, the high I/O jobs can be pushed to RAM or to an SSD partition by changing `use_shm: True` in the config file (see details in the next section). If using the latter option, then also add `shm_limit={shm_concurrency}` to the `--resources` call above, where `{shm_concurrency}` is an integer for the maximum number of concurring jobs when using the RAM/SSD partition. If either `io_limit` or `shm_limit` are not set, then all jobs will be submitted with no regards to maximum concurrency (which should not be an issue if running in a cluster).
 
 ### 4) Running the example data
 We included some example data at `examples`. It consists of a heavily downsampled chromosome 1 of one of the Buenrostro *et al* 2013<sup>[1]</sup> original GM12878 ATAC-seq samples and chromosomes 1 of our CTCF_known2 and ELF1_known1 motif scans. The example also includes a config file, which we will use to instruct Snakemake. To run the example, execute the code below.

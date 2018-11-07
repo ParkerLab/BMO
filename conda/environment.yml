@@ -318,5 +318,5 @@ dependencies:
   - r-xts=0.11_0=r351h6402f54_0
   - r-yaml=2.2.0=r351h6402f54_0
   - r-zoo=1.8_3=r351h6402f54_0
-prefix: /Users/rdalbanus/anaconda3/envs/BMO_env
+prefix: $HOME/anaconda3/envs/BMO_env
 
