@@ -37,8 +37,8 @@ sys_print <- function(x){write(x, stdout())}
 
 # Read data
 sys_print("Reading data...")
-df_nb     <- read.table(args$f1)
-df_motifs <- read.table(args$f2)
+df_nb     <- read.table(args$f1, sep = "\t")
+df_motifs <- read.table(args$f2, sep = "\t")
 
 # Fit NB distribution on co-occurring motifs
 sys_print("Fitting distributions...")
