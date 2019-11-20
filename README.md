@@ -1,7 +1,9 @@
 # ParkerLab BMO
 
 # Overview
-BMO (pronounced *beemo*) is an algorithm to predict TF binding from ATAC-seq data without using footprints. BMO uses negative binomial models of ATAC-seq fragments and number of co-occurring motifs to determine the likelihood of a given motif instance being bound.
+BMO (pronounced *beemo*) is an algorithm to predict TF binding from ATAC-seq data without using footprints. BMO uses negative binomial models of ATAC-seq fragments and number of co-occurring motifs to determine the likelihood of a given motif instance being bound. More details about the model can be found in our manuscript:
+
+[Chromatin information content landscapes inform transcription factor and DNA interactions](https://doi.org/10.1101/777532)
 
 **Disclaimer**: BMO has only been tested with paired-end ATAC-seq data.
 
@@ -13,7 +15,7 @@ BMO (pronounced *beemo*) is an algorithm to predict TF binding from ATAC-seq dat
 2. ATAC-seq peak calls <sup>2</sup>
 3. Motif BED6 <sup>3</sup> files. One file per PWM scan <sup>4</sup>
 
-<sup>1</sup> High quality (we use MAPQ ≥ 30), duplicate removed (we use [Picard](https://broadinstitute.github.io/picard/)), properly paired, and uniquely mapped reads only (SAM [flags](https://broadinstitute.github.io/picard/explain-flags.html) `-f 3 -F 4 -F 8 -F 256 -F 1024 -F 2048`).
+<sup>1</sup> We recommend high quality (MAPQ ≥ 30), autosomal, duplicate removed (we use [Picard](https://broadinstitute.github.io/picard/)), properly paired, and uniquely mapped reads only (SAM [flags](https://broadinstitute.github.io/picard/explain-flags.html) `-f 3 -F 4 -F 8 -F 256 -F 1024 -F 2048`). If you don't have an ATAC-seq pipeline set up yet, you should consider using the [Parker Lab ATAC-seq Snakemake pipeline](https://github.com/ParkerLab/ATACseq-Snakemake).
 
 <sup>2</sup> We call them with [MACS2](https://github.com/taoliu/MACS), using flags `--broad --nomodel --shift -100 --extsize 200 --keep-dup all` and then intersect out [blacklisted regions](https://sites.google.com/site/anshulkundaje/projects/blacklists).
 
@@ -83,7 +85,7 @@ Our Snakemake pipeline makes use of a configuration file, which includes informa
 * **`shm_dir`**: path for shared memory operations if `use_shm: True`.
 * **`samples`**: information about each ATAC-seq experiment to be processed. The `bamfile` and `peakfile` fields under each sample handle are mandatory and point to the experiment's BAM and peak calls, respectively. Attention: make sure that the sample handles (main identation of each sample) are **unique**.
 
-IMPORTANT: Because the config is a [yaml](http://yaml.org) file, **make sure to maintain all the indentations as they appear** or unexpected behaviors may occurr.
+IMPORTANT: Because the config is a [yaml](http://yaml.org) file, **make sure to maintain all the indentations as they appear** or unexpected behaviors may occur.
 
 ### 3) Running BMO pipeline in Snakemake
 To execute the pipeline, you need to copy both the `Snakefile` and `input/config.yaml` to wherever you want to run the analysis in your machine/cluster and then update the config file as described in the previous section. After that, just run the code below and Snakemake will take care of the rest. Simple as that.
@@ -93,7 +95,7 @@ snakemake [-j {threads}] [--resources io_limit={concurrency}] --configfile confi
 ```
 * Flags in [brackets] are optional.
 * **`{threads}`** is an integer value for the total number of cores Snakemake is allowed to use. if running on a HPC cluster, then set to 999 or some arbitrarily high value.
-* **`{concurrency}`** is also an integer, and determines the number of maximum I/O intensive jobs to run simultaneously (we recommend starting with 1-3 and keeping an eye on the `%iowait` column of `sar` to see how much your machine can handle). Alternatively, the high I/O jobs can be pushed to RAM or to an SSD partition by changing `use_shm: True` in the config file (see details in the next section). If using the latter option, then also add `shm_limit={shm_concurrency}` to the `--resources` call above, where `{shm_concurrency}` is an integer for the maximum number of concurring jobs when using the RAM/SSD partition. If either `io_limit` or `shm_limit` are not set, then all jobs will be submitted with no regards to maximum concurrency (which should not be an issue if running in a cluster).
+* **`{concurrency}`** is also an integer, and determines the number of maximum I/O intensive jobs to run simultaneously (we recommend starting with 1-3 and keeping an eye on the `%iowait` column of `sar` to see how much your machine can handle). Alternatively, the high I/O jobs can be pushed to RAM or to an SSD partition by changing `use_shm: True` in the config file (see details in the previous section). If using the latter option, then also add `shm_limit={shm_concurrency}` to the `--resources` call above, where `{shm_concurrency}` is an integer for the maximum number of concurring jobs when using the RAM/SSD partition. If either `io_limit` or `shm_limit` are not set, then all jobs will be submitted with no regards to maximum concurrency (which should not be an issue if running in a cluster).
 
 ### 4) Running the example data
 We included some example data at `examples`. It consists of a heavily downsampled chromosome 1 of one of the Buenrostro *et al* 2013<sup>[1]</sup> original GM12878 ATAC-seq samples and chromosomes 1 of our CTCF_known2 and ELF1_known1 motif scans. The example also includes a config file, which we will use to instruct Snakemake. To run the example, execute the code below.
