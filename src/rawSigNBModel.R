@@ -32,10 +32,10 @@ option_list = list(
   # Optional arguments
   make_option(c("-n", "--name"), type="character", default=NULL, 
               help="motif name", metavar="character"),
-  make_option(c("--dir1"), type="character", default='motifsWithBigwigCoverage/', 
+  make_option(c("--dir1"), type="character", default="all_regions/",
               help="directory with all read counts (include trailing slash)", 
               metavar="character"),
-  make_option(c("--dir2"), type="character", default='motifsWithBigwigCoverage_outsidePeaks/', 
+  make_option(c("--dir2"), type="character", default="outside_peaks/",
               help="directory with all read counts outside peaks (include trailing slash)", 
               metavar="character"),
   make_option(c("--colnum2"), type="integer", default=NULL, 
@@ -48,6 +48,9 @@ option_list = list(
               help="true positives", metavar="character"),
   make_option(c("--plotFitted"), type="logical", default=T, 
               help="make fitted distribution plots", metavar="logical"),
+  make_option(c("--keepOutliers"), action = "store_true", default = FALSE, 
+              help="Keep motif instances with more than 1,000 reads", 
+              metavar="logical"),
   make_option(c("--qvalcutoff"), type="numeric", default=1e-7, 
               help="manual q-value cutoff", metavar="numeric"),
   make_option(c("--writeBed"), action = "store_true", default = FALSE,
@@ -70,7 +73,8 @@ opt <- list()
 
 if (is.null(args$file)){
   print_help(opt_parser)
-  stop("At least the first three arguments must be supplied (input, output, column).", call. = FALSE)
+  stop("At least the first three flags must be supplied",
+       "(input, output, column).", call. = FALSE)
 }
 
 # Read data
@@ -108,9 +112,9 @@ if(!is.null(args$mu) & !is.null(args$size)){
 
 # Set NAs to 0 and convert to integer
 if(!is.numeric(d[,column]) | !is.numeric(d[,column])){
-    warning(paste(factor, 
-                  ": One or more columns are not numbers. Forcefully converting and proceeding.", 
-                  sep = ''))
+    warning(factor, 
+            ": One or more columns are not numbers.\n",
+            "Forcefully converting and proceeding.")
     d[,column] <- as.numeric(d[,column])
     d2[,column] <- as.numeric(d2[,column])
 }
@@ -126,6 +130,17 @@ n <- 10000
 if (nrow(d2) < n) {
   warning("There are less than 10,000 motif instances outside peaks.")
   n <- nrow(d2)
+}
+
+if (max(d$readCounts) >= 1000) {
+  if (!args$keepOutliers) {
+    warning("Removing outlier motif instances (with over 1,000 reads).",
+            "\nPlease consider checking your input for mitochondrial reads or ",
+            "regions with known mappability issues.\nIf you are sure you want",
+            "to keep these instances, re-run with flag --keepOutliers")
+    d <- d[d$readCounts < 1000,]
+    d2 <- d2[d2$readCounts < 1000,]
+  }
 }
 
 if(!opt$manual){  
@@ -180,10 +195,13 @@ nbins <- ifelse(max(sampled) >= max(negbin), max(sampled), max(negbin))
 
 if(args$plotFitted){
   p1 <- ggplot(NULL, aes(sampled)) + 
-    geom_histogram(aes(fill = 'Sampled data', color = NULL), alpha = .5, bins = nbins) +
-    geom_histogram(aes(negbin, fill = 'Negative binomial', color = NULL), alpha = .5, bins = nbins) +
-    scale_fill_manual(name='Distributions', values = c('Sampled data' = 'black',
-                                                       'Negative binomial' = 'red')
+    geom_histogram(aes(fill = 'Sampled data', color = NULL), alpha = .5, 
+                       bins = nbins) +
+    geom_histogram(aes(negbin, fill = 'Negative binomial', color = NULL), 
+                       alpha = .5, bins = nbins) +
+    scale_fill_manual(name='Distributions', 
+                      values = c('Sampled data' = 'black',
+                                 'Negative binomial' = 'red')
     ) +
     labs(x = 'Tags in motif vicinity', y = 'Number of motifs', title = factor) +
     theme_bw()
@@ -202,5 +220,6 @@ if(args$plotFitted){
     theme(plot.title = element_text(face = 'bold', margin = margin(b=20,t=10)),
           axis.title.x = element_text(margin = margin(b=10,t=20)),
           axis.title.y = element_text(margin = margin(l=10,r=20)))
-  ggsave(p1.2, filename=paste(outfile,'.p-histogram.pdf',sep=''), height=5.5, width=5.5)
+  ggsave(p1.2, filename=paste(outfile,'.p-histogram.pdf',sep=''), 
+         height=5.5, width=5.5)
 }
