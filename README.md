@@ -1,4 +1,20 @@
-# ParkerLab BMO
+# Parker Lab BMO
+
+- [Overview](#overview)
+- [Required input](#required-input)
+- [Algorithm overview](#algorithm-overview)
+- [Installation](#installation)
+- [Running BMO](#running-bmo)
+  * [Using Snakemake](#using-snakemake)
+    + [1) Create and activate BMO conda environment (optional)](#1--create-and-activate-bmo-conda-environment--optional-)
+    + [2) Setting up the Snakemake configuration file](#2--setting-up-the-snakemake-configuration-file)
+    + [3) Running BMO pipeline in Snakemake](#3--running-bmo-pipeline-in-snakemake)
+    + [4) Running the example data](#4--running-the-example-data)
+  * [Manually (standalone version)](#manually--standalone-version-)
+  * [Run time and memory requirements](#run-time-and-memory-requirements)
+- [Interpreting BMO results](#interpreting-bmo-results)
+  * [Processed BED files](#processed-bed-files)
+  * [Full output](#full-output)
 
 # Overview
 BMO (pronounced *beemo*) is an algorithm to predict TF binding from ATAC-seq data without using footprints. BMO uses negative binomial models of ATAC-seq fragments and number of co-occurring motifs to determine the likelihood of a given motif instance being bound. More details about the model can be found in our manuscript:
