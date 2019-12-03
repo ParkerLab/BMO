@@ -25,23 +25,7 @@ BMO (pronounced *beemo*) is an algorithm to predict TF binding from ATAC-seq dat
 
 
 # Algorithm overview
-```mermaid
-graph TD;
-bam(Pruned BAM file) --> reads(<center>Number of reads<br/>per motif instance</center>);
-bed(Motif BED file) --> reads;
-bed --> cooccur(Co-occurring<br/>motifs NB fit);
-reads --> in_out(<center>Motif instances<br/>inside and outside peaks</center>);
-peaks(Peak calls) --> in_out;
-in_out --> nb_atac(ATAC-seq NB fit);
-nb_atac --> BMO;
-cooccur --> BMO;
-BMO --> bound(<center>Predicted bound<br/>motif instances</center>);
-BMO --> unbound(<center>Predicted unbound<br/>motif instances</center>);
-style bam fill:lightgreen
-style bed fill:lightgreen
-style peaks fill:lightgreen
-style BMO fill:lightblue
-```
+![Workflow overview](docs/diagram.png)
 
 
 # Installation
