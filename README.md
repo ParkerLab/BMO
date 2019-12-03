@@ -7,7 +7,7 @@ BMO (pronounced *beemo*) is an algorithm to predict TF binding from ATAC-seq dat
 
 **Disclaimer**: BMO has only been tested with paired-end ATAC-seq data.
 
-**Platforms tested**: Linux, macOS
+**Platforms tested**: Linux (Debian 9), macOS (10.13)
 
 
 # Required input
@@ -22,6 +22,26 @@ BMO (pronounced *beemo*) is an algorithm to predict TF binding from ATAC-seq dat
 <sup>3</sup> Mandatory. Pipeline will crash otherwise.
 
 <sup>4</sup> We use [FIMO](http://meme-suite.org/doc/fimo.html).
+
+
+# Algorithm overview
+```mermaid
+graph TD;
+bam(Pruned BAM file) --> reads(<center>Number of reads<br/>per motif instance</center>);
+bed(Motif BED file) --> reads;
+bed --> cooccur(Co-occurring<br/>motifs NB fit);
+reads --> in_out(<center>Motif instances<br/>inside and outside peaks</center>);
+peaks(Peak calls) --> in_out;
+in_out --> nb_atac(ATAC-seq NB fit);
+nb_atac --> BMO;
+cooccur --> BMO;
+BMO --> bound(<center>Predicted bound<br/>motif instances</center>);
+BMO --> unbound(<center>Predicted unbound<br/>motif instances</center>);
+style bam fill:lightgreen
+style bed fill:lightgreen
+style peaks fill:lightgreen
+style BMO fill:lightblue
+```
 
 
 # Installation
@@ -109,7 +129,8 @@ snakemake -j 4 --configfile examples/example_config.yaml
 ## Manually (standalone version)
 *Coming soon*
 
-
+## Run time and memory requirements
+The expected run time will vary depending on the size of your input files. As an example, a relatively large motif file (\~400K instances) running on a very large BAM file (\~80M reads) takes less than 5 minutes and 500Mb of RAM using 4 cores. The same motif file takes less than 2 minutes and the same amount of RAM to run on a smaller BAM file (\~35M reads) using the same number of cores.
 
 # Interpreting BMO results
 ## Processed BED files
