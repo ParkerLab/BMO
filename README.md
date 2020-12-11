@@ -1,4 +1,5 @@
 # Parker Lab BMO
+[![DOI](https://zenodo.org/badge/136372329.svg)](https://zenodo.org/badge/latestdoi/136372329)
 
 - [Overview](#overview)
   * [Algorithm overview](#algorithm-overview)
