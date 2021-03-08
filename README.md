@@ -23,9 +23,9 @@
   * [Full output](#full-output)
 
 # Overview
-BMO (pronounced *beemo*) is an algorithm to predict TF binding from ATAC-seq data without using footprints. BMO uses negative binomial models of ATAC-seq fragments and number of co-occurring motifs to determine the likelihood of a given motif instance being bound. More details about the model can be found in our manuscript:
+BMO (pronounced *beemo*) is an algorithm to predict TF binding from ATAC-seq data without using footprints. BMO uses negative binomial models of ATAC-seq fragments and number of co-occurring motifs to determine the likelihood of a given motif instance being bound. More details about the model can be found in our Nature Communications manuscript:
 
-[Chromatin information content landscapes inform transcription factor and DNA interactions](https://doi.org/10.1101/777532)
+[Chromatin information content landscapes inform transcription factor and DNA interactions](https://doi.org/10.1038/s41467-021-21534-4)
 
 **Disclaimer**: BMO has only been tested with paired-end ATAC-seq data.
 
