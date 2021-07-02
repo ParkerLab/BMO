@@ -68,8 +68,8 @@ step     <- args$step
 xrange   <- args$xrange
 
 # Define which bins should be required for the information content enrichments
-lim1 <- 25        # center
-lim2 <- c(50, 70) # sides1
+lim1 <- 25        # Motif-adjacent CIE peak
+lim2 <- c(50, 70) # Motif proximal CIE peaks
 
 # Minimum fragment size to include in the analyses
 lowerFragmentSizeLimit <- 41
@@ -85,11 +85,11 @@ read_n_trim <- function(input, minSize = lowerFragmentSizeLimit){
     stop("Parsed vsignal file is empty. Closing.")
   }
   
-  # Fetch number of reads in pChART regions before filtering
-  pchart_reads_center <- sum(abs(d$FragmentMidpointDistanceToFeatureMidpoint) <= lim1)
-  pchart_reads_side1  <- sum(abs(d$FragmentMidpointDistanceToFeatureMidpoint) >= lim2[1] & 
+  # Fetch number of reads in f-VICE regions before filtering
+  fvice_reads_center <- sum(abs(d$FragmentMidpointDistanceToFeatureMidpoint) <= lim1)
+  fvice_reads_side1  <- sum(abs(d$FragmentMidpointDistanceToFeatureMidpoint) >= lim2[1] & 
                                abs(d$FragmentMidpointDistanceToFeatureMidpoint) <= lim2[2])
-  pchart_reads_raw <<- pchart_reads_center + pchart_reads_side1
+  fvice_reads_raw <<- fvice_reads_center + fvice_reads_side1
   
   # Trim to our region of interest
   d <- d[d$FragmentSize >= minSize,]
@@ -98,11 +98,11 @@ read_n_trim <- function(input, minSize = lowerFragmentSizeLimit){
   minCoord <- min(d$FragmentMidpointDistanceToFeatureMidpoint)
   coord_span <<- length(minCoord:maxCoord)
   
-  # Fetch number of reads in pChART regions after filtering
-  pchart_reads_center <- sum(abs(d$FragmentMidpointDistanceToFeatureMidpoint) <= lim1)
-  pchart_reads_side1  <- sum(abs(d$FragmentMidpointDistanceToFeatureMidpoint) >= lim2[1] & 
+  # Fetch number of reads in f-VICE regions after filtering
+  fvice_reads_center <- sum(abs(d$FragmentMidpointDistanceToFeatureMidpoint) <= lim1)
+  fvice_reads_side1  <- sum(abs(d$FragmentMidpointDistanceToFeatureMidpoint) >= lim2[1] & 
                                abs(d$FragmentMidpointDistanceToFeatureMidpoint) <= lim2[2])
-  pchart_reads_trimmed <<- pchart_reads_center + pchart_reads_side1
+  fvice_reads_trimmed <<- fvice_reads_center + fvice_reads_side1
   
   return(d)
 }
@@ -317,11 +317,11 @@ write.table(posinfo,  file = gzfile(paste(args$output, '.posinfo.gz',sep='')), s
 write.table(posinfo_sub,  file = gzfile(paste(args$output, '.posinfo_sub.gz',sep='')), sep = "\t",
             row.names = F, quote = F)
 
-## Step 4: Calculate (non-normalized) pChART score
+## Step 4: Calculate (non-normalized) f-VICE score
 
 # Define which bins should be required for each track
-vic_cols <- cbind(abs(posinfo$position) <= lim1,                                        # all_center
-                  abs(posinfo$position) >= lim2[1] & abs(posinfo$position) <= lim2[2])  # all_sides1
+fvice_cols <- cbind(abs(posinfo$position) <= lim1,                                      # Center peak
+                  abs(posinfo$position) >= lim2[1] & abs(posinfo$position) <= lim2[2])  # Side peaks
 
 # Fetch bins from positional information matrix and process signal
 fetch_data <- function(posinfo, cols_to_get){
@@ -331,23 +331,23 @@ fetch_data <- function(posinfo, cols_to_get){
   total_info <- mean(subset_dat)     # Returns the mean of the signal in the region
   return(total_info)
 }
-all_center <- fetch_data(posinfo, vic_cols[,1])
-all_sides  <- fetch_data(posinfo, vic_cols[,2])
-pchart     <- all_center + all_sides
+all_center <- fetch_data(posinfo, fvice_cols[,1])
+all_sides  <- fetch_data(posinfo, fvice_cols[,2])
+fvice     <- all_center + all_sides
 
-all_center_sub <- fetch_data(posinfo_sub, vic_cols[,1])
-all_sides_sub  <- fetch_data(posinfo_sub, vic_cols[,2])
-pchart_sub <- all_center_sub + all_sides_sub
+all_center_sub <- fetch_data(posinfo_sub, fvice_cols[,1])
+all_sides_sub  <- fetch_data(posinfo_sub, fvice_cols[,2])
+fvice_sub <- all_center_sub + all_sides_sub
 
-# Make pChART output
+# Make f-VICE output
 output <- data.frame(center = all_center,
                      side1  = all_sides,
-                     pchart = pchart,
-                     pchart_sub = pchart_sub,
+                     fvice = fvice,
+                     fvice_sub = fvice_sub,
                      nreads = usedReads,
                      nreads_sub = nrow(subsampled_data),
-                     pchart_reads_raw = pchart_reads_raw,
-                     pchart_reads_trimmed = pchart_reads_trimmed)
+                     fvice_reads_raw = fvice_reads_raw,
+                     fvice_reads_trimmed = fvice_reads_trimmed)
 
 if(!is.null(raw_data$FeatureNumber)){
   output$nmotifs     <- max(raw_data$FeatureNumber)
