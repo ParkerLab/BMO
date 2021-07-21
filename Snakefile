@@ -4,6 +4,8 @@
 # University of Michigan, Ann Arbor
 #
 
+from os.path import join
+
 ###
 # HELPER FUNCTIONS
 #
@@ -41,7 +43,7 @@ else:
 rule all:
     input:
         expand(
-            os.path.join(config['results'], "bmo", "{sample}",
+            join(config['results'], "bmo", "{sample}",
                          "bound", "{motif}.bound.bed"),
             sample=get_samples(), motif=get_motifs()
         ),
@@ -50,12 +52,12 @@ rule all:
 if config["use_shm"] is True:
     print("Motifs will be processed using /dev/shm...")
     include:
-        os.path.join(config["bmo_dir"], "rules",
+        join(config["bmo_dir"], "rules",
                      "measure_raw_signal_shm.smk")
 else:
     print("Motifs will not be processed using /dev/shm...")
     include:
-        os.path.join(config["bmo_dir"], "rules", "measure_raw_signal.smk")
+        join(config["bmo_dir"], "rules", "measure_raw_signal.smk")
 
 
 rule motifs_outside_peaks:
@@ -63,8 +65,10 @@ rule motifs_outside_peaks:
         motif = rules.measure_raw_signal.output,
         peaks = lambda wildcards: get_peaks(wildcards.sample)
     output:
-        os.path.join(config['results'], "raw_signals",
+        join(config['results'], "raw_signals",
                      "{sample}", "outside_peaks", "{motif}.bed")
+    conda:
+        "envs/bmo.yml"
     shell:
         "{IONICE} intersectBed -v -a {input.motif} -b {input.peaks} > {output}"
 
@@ -72,13 +76,15 @@ rule count_overlapping_motifs:
     input:
         rules.measure_raw_signal.output
     output:
-        os.path.join(config['results'], "raw_signals",
+        join(config['results'], "raw_signals",
                      "{sample}", "co_occurring", "{motif}.bed")
     params:
-        com_src = os.path.join(
+        com_src = join(
             config["bmo_dir"], "src", "count_co-occuring_motifs.sh"),
         bmo_dir = config["bmo_dir"],
-        vicinity = 100
+        vicinity = 100,
+    conda:
+        "envs/bmo.yml"
     shell:
         """
         {IONICE} {params.com_src} {input} {params.vicinity} {params.bmo_dir}\
@@ -91,18 +97,20 @@ rule fit_nbinoms:
         motif_counts = rules.count_overlapping_motifs.output,
         outside_peaks = rules.motifs_outside_peaks.output
     output:
-        os.path.join(config['results'], "negative_binomials",
+        join(config['results'], "negative_binomials",
                      "{sample}", "{motif}.bed.gz")
     params:
-        nb_src = os.path.join(config["bmo_dir"], "src", "rawSigNBModel.R"),
+        nb_src = join(config["bmo_dir"], "src", "rawSigNBModel.R"),
         in_handle = "{motif}.bed",
         out_handle = config['results'] + \
             "/negative_binomials/{sample}/{motif}",
         # note trailing slashes on both
-        d1 = os.path.join(config['results'],
+        d1 = join(config['results'],
                           "raw_signals", "{sample}", "all_regions/"),
-        d2 = os.path.join(config['results'], "raw_signals",
+        d2 = join(config['results'], "raw_signals",
                           "{sample}", "outside_peaks/"),
+    conda:
+        "envs/bmo.yml"
     shell:
         """
         {IONICE} Rscript {params.nb_src} -f {params.in_handle} \
@@ -115,11 +123,13 @@ rule BMO:
         atac_nb = rules.fit_nbinoms.output,
         motif_counts = rules.count_overlapping_motifs.output
     output:
-        os.path.join(config['results'], "bmo",
+        join(config['results'], "bmo",
                      "{sample}", "bound", "{motif}.bound.bed")
     params:
-        bmo_src = os.path.join(config["bmo_dir"], "src", "bmo.R"),
-        bmo_output_dir = os.path.join(config['results'], "bmo", "{sample}")
+        bmo_src = join(config["bmo_dir"], "src", "bmo.R"),
+        bmo_output_dir = join(config['results'], "bmo", "{sample}")
+    conda:
+        "envs/bmo.yml"
     threads:
         1
     shell:

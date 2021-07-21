@@ -1,0 +1,19 @@
+name: BMO
+channels:
+  - conda-forge
+  - bioconda
+  - r
+  - defaults
+dependencies:
+  - bedtools=2.*
+  - perl=5.*
+  - R=3.6*
+  - r-mass
+  - r-optparse
+  - r-fitdistrplus
+  - r-metap
+  - r-entropy
+  - r-tidyr
+  - r-dplyr
+  - r-ggplot2
+

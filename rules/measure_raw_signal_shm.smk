@@ -7,11 +7,13 @@ rule push_bam_to_shm:
             wildcards.sample]["bamfile"] + ".bai"
     output:
         bam = temporary(
-            os.path.join(config["shm_dir"], "{sample}.pruned.bam")
+            join(config["shm_dir"], "{sample}.pruned.bam")
         ),
         bai = temporary(
-            os.path.join(config["shm_dir"], "{sample}.pruned.bam.bai")
-        )
+            join(config["shm_dir"], "{sample}.pruned.bam.bai")
+        ),
+    conda:
+        "../envs/bmo.yml"
     shell:
         """
         {IONICE} cp {input.bam} {output.bam} && samtools index {output.bam}
@@ -19,12 +21,12 @@ rule push_bam_to_shm:
 
 rule push_motif_to_shm:
     input:
-        lambda wildcards: os.path.join(
+        lambda wildcards: join(
             config['motif_dir'], "{}.{}".format(
                 wildcards.motif, config["motif_ext"])
         )
     output:
-        temporary(os.path.join(config["shm_dir"], "motifs", "{motif}.bed.gz"))
+        temporary(join(config["shm_dir"], "motifs", "{motif}.bed.gz"))
     shell:
         """
         {IONICE} cp {input} {output}
@@ -36,13 +38,15 @@ rule measure_raw_signal:
         bam = rules.push_bam_to_shm.output.bam,
         bai = rules.push_bam_to_shm.output.bai,
     output:
-        os.path.join(config['results'], "raw_signals", "{sample}",
+        join(config['results'], "raw_signals", "{sample}",
                      "all_regions", "{motif}.bed")
     params:
-        mrs_script = os.path.join(
+        mrs_script = join(
             config["bmo_dir"], "src", "measureRawSignal.py"),
-        tmp = os.path.join(config["shm_dir"],
-                           "{sample}_{motif}.raw_signal.bed")
+        tmp = join(config["shm_dir"],
+                           "{sample}_{motif}.raw_signal.bed"),
+    conda:
+        "../envs/bmo.yml"
     threads:
         15
     resources:
