@@ -48,9 +48,6 @@ option_list = list(
               help="true positives", metavar="character"),
   make_option(c("--plotFitted"), type="logical", default=T, 
               help="make fitted distribution plots", metavar="logical"),
-  make_option(c("--keepOutliers"), action = "store_true", default = FALSE, 
-              help="Keep motif instances with more than 1,000 reads", 
-              metavar="logical"),
   make_option(c("--qvalcutoff"), type="numeric", default=1e-7, 
               help="manual q-value cutoff", metavar="numeric"),
   make_option(c("--writeBed"), action = "store_true", default = FALSE,
@@ -130,17 +127,6 @@ n <- 10000
 if (nrow(d2) < n) {
   warning("There are less than 10,000 motif instances outside peaks.")
   n <- nrow(d2)
-}
-
-if (max(d$readCounts) >= 1000) {
-  if (!args$keepOutliers) {
-    warning("Removing outlier motif instances (with over 1,000 reads).",
-            "\nPlease consider checking your input for mitochondrial reads or ",
-            "regions with known mappability issues.\nIf you are sure you want",
-            "to keep these instances, re-run with flag --keepOutliers")
-    d <- d[d$readCounts < 1000,]
-    d2 <- d2[d2$readCounts < 1000,]
-  }
 }
 
 if(!opt$manual){  
