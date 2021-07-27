@@ -35,62 +35,25 @@ BMO (pronounced *beemo*) is an algorithm to predict TF binding from ATAC-seq dat
 ![Workflow overview](docs/diagram.png)
 
 # Installation
-Installation time: \~5 minutes. Will take longer (up to 1h) if you create the conda environment.
+Installation time: less than 5 minutes.
 
 From your machine, run the command below wherever you want BMO's main directory to be (*e.g.* `~/software`).
 ```sh
 git clone https://github.com/ParkerLab/BMO.git
 ```
 
-## Create and activate BMO conda environment (optional)
+## Create and activate BMO base environment
+BMO was designed to run using [Snakemake](https://snakemake.readthedocs.io), an extremely powerful tool for running reproducible pipelines. The command below will create a base conda environment with snakemake and mamba to handle dependencies. All the other dependencies will be handled interanally by snakemake.
 **Requirements**: Having a working [Anaconda](https://docs.anaconda.com/anaconda/install/) or [Miniconda](https://conda.io/docs/user-guide/install/index.html) installation in your system.
 
-### Using the provided conda environment
-If you do not have Snakemake installed, don't have administrative privileges in your machine/cluster, or don't want to overwrite anything in your main environment, we provide a separate [conda environment](https://conda.io/docs/user-guide/tasks/manage-environments.html) with everything you need to get started (it's actually just a barebones python 3 with Snakemake, pysam, and R installed). To create the environment, run the command below from wherever you cloned BMO:
 ```sh
-conda env create -f conda/environment.yml
+conda create -c conda-forge -c bioconda -n bmo_base snakemake mamba
+conda activate bmo_base
 ```
-It may take a some time to run, but you only have to do this once. 
-
-Now you can activate your environment. **This is the only step you need to do every time you want to run BMO**.
-```sh
-source activate BMO_env
-```
-With your environment activated for the first time, you need to install the R dependencies that can't be automatically included. You only need to do this once.
-```sh
-Rscript conda/install_R_dependencies.R
-```
-You are now ready to run BMO.
-
-### Or manually creating your own environment
-Some users reported an [issue](https://github.com/ContinuumIO/anaconda-issues/issues/9480) with conda where the environment creation from a file fails with a `ResolvePackageNotFound` error. If you encountered this or any error trying to use the provided environment file, you can manually create BMO environment by running:
-```
-# Create and activate environment
-conda create --name BMO_env
-source activate BMO_env
-
-# Install Snakemake and pysam
-conda install -c bioconda -c conda-forge snakemake
-conda config --add channels defaults
-conda config --add channels conda-forge
-conda config --add channels bioconda
-conda install pysam
-
-# Install R and dependencies
-conda install r-essentials
-Rscript conda/install_R_dependencies.R
-```
-
-## Installing dependencies manually
-Here's the core software you need to have installed in your machine:
-* [bedtools](https://bedtools.readthedocs.io/en/latest/)
-* [htslib](http://www.htslib.org)
-* [pysam](https://pysam.readthedocs.io/en/latest/)
-* [R](https://www.r-project.org) (required libraries: MASS, fitdistrplus, and metap)
 
 # Running BMO
 
-## Required input
+## Required input files
 1. ATAC-seq experiment processed <sup>1</sup> and indexed BAM file
 2. ATAC-seq peak calls <sup>2</sup>
 3. Motif BED6 <sup>3</sup> files. One file per PWM scan <sup>4</sup>
@@ -103,8 +66,7 @@ Here's the core software you need to have installed in your machine:
 
 <sup>4</sup> We use [FIMO](http://meme-suite.org/doc/fimo.html).
 
-## Using Snakemake
-We strongly recommend you run BMO using [Snakemake](https://snakemake.readthedocs.io), an extremely powerful tool for running reproducible pipelines. 
+## Using Snakemake (recommended approach)
 
 ### Setting up the Snakemake configuration file
 Our Snakemake pipeline makes use of a configuration file, which includes information of paths and input files. The template is located in `config/config.yaml`. Let's go through each of the fields:
@@ -130,8 +92,9 @@ snakemake [-j {threads}] [--resources io_limit={concurrency}] --configfile confi
 * **`{threads}`** is an integer value for the total number of cores Snakemake is allowed to use. if running on a HPC cluster, then set to 999 or some arbitrarily high value.
 * **`{concurrency}`** is also an integer, and determines the number of maximum I/O intensive jobs to run simultaneously (we recommend starting with 1-3 and keeping an eye on the `%iowait` column of `sar` to see how much your machine can handle). Alternatively, the high I/O jobs can be pushed to RAM or to an SSD partition by changing `use_shm: True` in the config file (see details in the previous section). If using the latter option, then also add `shm_limit={shm_concurrency}` to the `--resources` call above, where `{shm_concurrency}` is an integer for the maximum number of concurring jobs when using the RAM/SSD partition. If either `io_limit` or `shm_limit` are not set, then all jobs will be submitted with no regards to maximum concurrency (which should not be an issue if running in a cluster).
 
-## Manually (standalone version)
-Edit the variables in the `# Config` section of `src/bmo_manual.sh` similarly to the `config.yaml` file and run:
+## Manually (standalone version, not recommended)
+Edit the variables in the `# Config` section of `src/bmo_manual.sh` similarly to the `config.yaml` file and run the commands below. Make sure you have all the dependencies listed in `envs/bmo.yml` installed in your system (note: the required R packages have the prefix `r-` in the yml file).
+
 ```sh
 bash scripts/bmo_manual.sh > pipeline.sh
 ```
@@ -152,8 +115,8 @@ We included some example data at `examples`. It consists of a heavily downsample
 ## With Snakemake
 The example also includes a config file, which we will use to instruct Snakemake. To run the example, execute the code below.
 ```sh
-# source activate BMO_env  # if using conda environment
-snakemake -j 4 --configfile examples/example_config.yaml
+# conda activate bmo_base
+snakemake -j 4 --configfile examples/example_config.yaml --use-conda
 ```
 
 ## Manually
