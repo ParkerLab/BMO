@@ -6,6 +6,7 @@ channels:
   - defaults
 dependencies:
   - bedtools=2.*
+  - pysam
   - perl=5.*
   - R=3.6*
   - r-mass
