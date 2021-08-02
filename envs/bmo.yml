@@ -7,6 +7,7 @@ channels:
 dependencies:
   - bedtools=2.*
   - pysam
+  - atactk
   - perl=5.*
   - R=3.6*
   - r-mass
