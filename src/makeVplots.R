@@ -6,7 +6,7 @@ library(RColorBrewer)
 library(scales)
 library(tidyr)
 suppressPackageStartupMessages(library(dplyr))
-source('/home/albanus/scripts/multiplot.R')
+source('src/multiplot.R')
 
 option_list = list(
   # Mandatory
