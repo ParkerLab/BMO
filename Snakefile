@@ -17,56 +17,61 @@ def get_motifs():
         yield motif.strip()
 
 
-# Config
-IONICE = config["ionice"]
-
-BMO_SRC = config["bmo_dir"]
-RESULTS = config['results']
-BAM_DIR = config["bamdir"]
-PEAK_DIR = config["summits"]
-MOTIF_DIR = config["motif_dir"]
-
-# Wildcards
-motifs = get_motifs()
-samples = config["clusters"]
+def get_samples():
+    """List all samples"""
+    for sample in sorted(config['samples'].keys()):
+        yield sample
 
 
+def get_peaks(sample):
+    """Get peak file associated with sample from the config"""
+    peakfile = config["samples"][sample]["peakfile"]
+    return peakfile
+
+if config["ionice"] is None:
+    IONICE = ""
+else:
+    IONICE = config["ionice"]
+
+###
+# PIPELINE
+#
+
+# Desired output
+#
 
 rule all:
     input:
         expand(
-            join(RESULTS, "fvice", "{sample}", "vplots", "{motif}.png"),
-            sample=samples, motif=motifs
+            join(config['results'], "bmo", "{sample}",
+                         "bound", "{motif}.bound.bed"),
+            sample=get_samples(), motif=get_motifs()
         ),
+        # expand(
+        #     join(config['results'], "fvice", "{sample}", 
+        #          "vplots", "{motif}.png"),
+        #     sample=get_samples(), motif=get_motifs()
+        # ),
 
 
+if config["use_shm"] is True:
+    print("Motifs will be processed using /dev/shm...")
+    include:
+        join(config["bmo_dir"], "rules",
+                     "measure_raw_signal_shm.smk")
+else:
+    print("Motifs will not be processed using /dev/shm...")
+    include:
+        join(config["bmo_dir"], "rules", "measure_raw_signal.smk")
 
-rule measure_raw_signal:
-    input:
-        motif = join(MOTIF_DIR, "{motif}.bed.gz"),
-        bam = join(BAM_DIR, "atac__{sample}.bam"),
-        bai = join(BAM_DIR, "atac__{sample}.bam.bai"),
-    output:
-        join(RESULTS, "raw_signals", "{sample}", "all_regions", "{motif}.bed")
-    params:
-        mrs_src = join(BMO_SRC, "src", "measureRawSignal.py"),
-    conda:
-        "envs/bmo.yml"
-    threads: 5
-    resources:
-        io_limit = 1
-    shell:
-        """
-        {IONICE} {params.mrs_src} -p {threads} -b {input.bam} \
-            -m {input.motif} > {output}
-        """
 
 rule motifs_outside_peaks:
     input:
         motif = rules.measure_raw_signal.output,
-        peaks = join(PEAK_DIR, "{sample}_peaks.min2.bed"),
+        peaks = lambda wildcards: get_peaks(wildcards.sample)
     output:
-        join(RESULTS, "raw_signals", "{sample}", "outside_peaks", "{motif}.bed")
+        join(config['results'], "raw_signals",
+                     "{sample}", "outside_peaks", "{motif}.bed")
     conda:
         "envs/bmo.yml"
     shell:
@@ -76,11 +81,12 @@ rule count_overlapping_motifs:
     input:
         rules.measure_raw_signal.output
     output:
-        join(RESULTS, "raw_signals", "{sample}", "co_occurring", "{motif}.bed")
+        join(config['results'], "raw_signals",
+                     "{sample}", "co_occurring", "{motif}.bed")
     params:
         com_src = join(
-            BMO_SRC, "src", "count_co-occuring_motifs.sh"),
-        bmo_dir = BMO_SRC,
+            config["bmo_dir"], "src", "count_co-occuring_motifs.sh"),
+        bmo_dir = config["bmo_dir"],
         vicinity = 100,
     conda:
         "envs/bmo.yml"
@@ -96,17 +102,17 @@ rule fit_nbinoms:
         motif_counts = rules.count_overlapping_motifs.output,
         outside_peaks = rules.motifs_outside_peaks.output
     output:
-        join(RESULTS, "negative_binomials",
+        join(config['results'], "negative_binomials",
                      "{sample}", "{motif}.bed.gz")
     params:
-        nb_src = join(BMO_SRC, "src", "rawSigNBModel.R"),
+        nb_src = join(config["bmo_dir"], "src", "rawSigNBModel.R"),
         in_handle = "{motif}.bed",
-        out_handle = RESULTS + \
+        out_handle = config['results'] + \
             "/negative_binomials/{sample}/{motif}",
         # note trailing slashes on both
-        d1 = join(RESULTS,
+        d1 = join(config['results'],
                           "raw_signals", "{sample}", "all_regions/"),
-        d2 = join(RESULTS, "raw_signals",
+        d2 = join(config['results'], "raw_signals",
                           "{sample}", "outside_peaks/"),
     conda:
         "envs/bmo.yml"
@@ -122,11 +128,11 @@ rule BMO:
         atac_nb = rules.fit_nbinoms.output,
         motif_counts = rules.count_overlapping_motifs.output
     output:
-        join(RESULTS, "bmo",
+        join(config['results'], "bmo",
                      "{sample}", "bound", "{motif}.bound.bed")
     params:
-        bmo_src = join(BMO_SRC, "src", "bmo.R"),
-        bmo_output_dir = join(RESULTS, "bmo", "{sample}")
+        bmo_src = join(config["bmo_dir"], "src", "bmo.R"),
+        bmo_output_dir = join(config['results'], "bmo", "{sample}")
     conda:
         "envs/bmo.yml"
     threads:
@@ -138,52 +144,54 @@ rule BMO:
             -o {params.bmo_output_dir} -n {wildcards.motif} -p {threads}
         """
 
-rule filter_co_occurring:
-    input:
-        rules.BMO.output,
-    output:
-        join(RESULTS, "fvice", "{sample}", "bound_no_overlap", "{motif}.bed"),
-    conda:
-        "envs/bmo.yml"
-    shell:
-        """
-        {IONICE} ~/scripts/filter_bed_co-occurring.py -i {input} \
-            -d 500 -c 5 -t strict > {output}
-        """
+# rule filter_co_occurring:
+#     input:
+#         rules.BMO.output,
+#     output:
+#         join(config['results'], "fvice", "{sample}", "bound_no_overlap", "{motif}.bed"),
+#     params:
+#         py = join(config["bmo_dir"], "src", "filter_bed_co-occurring.py"),
+#     conda:
+#         "envs/bmo.yml"
+#     shell:
+#         """
+#         {IONICE} {params.py} -i {input} -d 500 -c 5 -t strict > {output}
+#         """
 
-rule vsignal:
-    input:
-        bam = rules.measure_raw_signal.input.bam,
-        motif = rules.filter_co_occurring.output
-    output:
-        join(RESULTS, "fvice", "{sample}", "vplots", "{motif}.vsignal.gz")
-    params:
-        py = join(BMO_SRC, "src", "measure_signal"),
-        flags = "-r 500 -f 3 -F 4 -F 8 -q 30",
-    conda:
-        "envs/bmo.yml"
-    resources:
-        io_limit = 1
-    threads: 4
-    shell:
-        """
-        {IONICE} {params.py} -p {threads} {params.flags} {input.bam} \
-            {input.motif} | gzip -c > {output}
-        """
+# rule vsignal:
+#     input:
+#         bam = lambda wildcards: config["samples"][wildcards.sample]["bamfile"],
+#         bai = lambda wildcards: config["samples"][wildcards.sample]["bamfile"] + ".bai",
+#         motif = rules.filter_co_occurring.output
+#     output:
+#         join(config['results'], "fvice", "{sample}", "vplots", "{motif}.vsignal.gz")
+#     params:
+#         py = join(config["bmo_dir"], "src", "measure_signal"),
+#         flags = "-r 500 -f 3 -F 4 -F 8 -q 30",
+#     conda:
+#         "envs/bmo.yml"
+#     resources:
+#         io_limit = 1
+#     threads: 4
+#     shell:
+#         """
+#         {IONICE} {params.py} -p {threads} {params.flags} {input.bam} \
+#             {input.motif} | gzip -c > {output}
+#         """
 
-rule vplot:
-    input:
-        rules.vsignal.output
-    output:
-        join(RESULTS, "fvice", "{sample}", "vplots", "{motif}.png"),
-    params:
-        R = join(BMO_SRC, "src", "makeVplots.R"),
-        handle = join(RESULTS, "fvice", "{sample}", "vplots", "{motif}"),
-        name = "{sample}" + "_{motif}"
-    conda:
-        "envs/bmo.yml"
-    shell:
-        """
-        {IONICE} Rscript {params.R} -f {input} -o {params.handle} 
-            -n {params.name} --ylim 1.0
-        """
+# rule vplot:
+#     input:
+#         rules.vsignal.output
+#     output:
+#         join(config['results'], "fvice", "{sample}", "vplots", "{motif}.png"),
+#     params:
+#         R = join(config["bmo_dir"], "src", "makeVplots.R"),
+#         handle = join(config['results'], "fvice", "{sample}", "vplots", "{motif}"),
+#         name = "{sample}" + "_{motif}"
+#     conda:
+#         "envs/bmo.yml"
+#     shell:
+#         """
+#         {IONICE} Rscript {params.R} -f {input} -o {params.handle} 
+#             -n {params.name} --ylim 1.0
+#         """
