@@ -1,6 +1,3 @@
-#!/lab/sw/ve/pl3/bin/python3.5
-
-#
 # measure_signal: Given a BAM file containing alignments from an
 # ATAC-seq experiment and a BED file of features, creates a
 # tab-separated value file containing for each feature, a line with

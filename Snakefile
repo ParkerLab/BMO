@@ -47,11 +47,11 @@ rule all:
                          "bound", "{motif}.bound.bed"),
             sample=get_samples(), motif=get_motifs()
         ),
-        # expand(
-        #     join(config['results'], "fvice", "{sample}", 
-        #          "vplots", "{motif}.png"),
-        #     sample=get_samples(), motif=get_motifs()
-        # ),
+        expand(
+            join(config['results'], "fvice", "{sample}", 
+                 "vplots", "{motif}.png"),
+            sample=get_samples(), motif=get_motifs()
+        ),
 
 
 if config["use_shm"] is True:
@@ -144,54 +144,54 @@ rule BMO:
             -o {params.bmo_output_dir} -n {wildcards.motif} -p {threads}
         """
 
-# rule filter_co_occurring:
-#     input:
-#         rules.BMO.output,
-#     output:
-#         join(config['results'], "fvice", "{sample}", "bound_no_overlap", "{motif}.bed"),
-#     params:
-#         py = join(config["bmo_dir"], "src", "filter_bed_co-occurring.py"),
-#     conda:
-#         "envs/bmo.yml"
-#     shell:
-#         """
-#         {IONICE} {params.py} -i {input} -d 500 -c 5 -t strict > {output}
-#         """
+rule filter_co_occurring:
+    input:
+        rules.BMO.output,
+    output:
+        join(config['results'], "fvice", "{sample}", "bound_no_overlap", "{motif}.bed"),
+    params:
+        py = join(config["bmo_dir"], "src", "filter_bed_co-occurring.py"),
+    conda:
+        "envs/bmo.yml"
+    shell:
+        """
+        {IONICE} {params.py} -i {input} -d 500 -c 5 -t strict > {output}
+        """
 
-# rule vsignal:
-#     input:
-#         bam = lambda wildcards: config["samples"][wildcards.sample]["bamfile"],
-#         bai = lambda wildcards: config["samples"][wildcards.sample]["bamfile"] + ".bai",
-#         motif = rules.filter_co_occurring.output
-#     output:
-#         join(config['results'], "fvice", "{sample}", "vplots", "{motif}.vsignal.gz")
-#     params:
-#         py = join(config["bmo_dir"], "src", "measure_signal"),
-#         flags = "-r 500 -f 3 -F 4 -F 8 -q 30",
-#     conda:
-#         "envs/bmo.yml"
-#     resources:
-#         io_limit = 1
-#     threads: 4
-#     shell:
-#         """
-#         {IONICE} {params.py} -p {threads} {params.flags} {input.bam} \
-#             {input.motif} | gzip -c > {output}
-#         """
+rule vsignal:
+    input:
+        bam = lambda wildcards: config["samples"][wildcards.sample]["bamfile"],
+        bai = lambda wildcards: config["samples"][wildcards.sample]["bamfile"] + ".bai",
+        motif = rules.filter_co_occurring.output
+    output:
+        join(config['results'], "fvice", "{sample}", "vplots", "{motif}.vsignal.gz")
+    params:
+        py = join(config["bmo_dir"], "src", "measure_signal"),
+        flags = "-r 500 -f 3 -F 4 -F 8 -q 30",
+    conda:
+        "envs/bmo.yml"
+    resources:
+        io_limit = 1
+    threads: 4
+    shell:
+        """
+        {IONICE} python {params.py} -p {threads} {params.flags} {input.bam} \
+            {input.motif} | gzip -c > {output}
+        """
 
-# rule vplot:
-#     input:
-#         rules.vsignal.output
-#     output:
-#         join(config['results'], "fvice", "{sample}", "vplots", "{motif}.png"),
-#     params:
-#         R = join(config["bmo_dir"], "src", "makeVplots.R"),
-#         handle = join(config['results'], "fvice", "{sample}", "vplots", "{motif}"),
-#         name = "{sample}" + "_{motif}"
-#     conda:
-#         "envs/bmo.yml"
-#     shell:
-#         """
-#         {IONICE} Rscript {params.R} -f {input} -o {params.handle} 
-#             -n {params.name} --ylim 1.0
-#         """
+rule vplot:
+    input:
+        rules.vsignal.output
+    output:
+        join(config['results'], "fvice", "{sample}", "vplots", "{motif}.png"),
+    params:
+        R = join(config["bmo_dir"], "src", "makeVplots.R"),
+        handle = join(config['results'], "fvice", "{sample}", "vplots", "{motif}"),
+        name = "{sample}" + "_{motif}"
+    conda:
+        "envs/bmo.yml"
+    shell:
+        """
+        {IONICE} Rscript {params.R} -f {input} -o {params.handle} \
+            -n {params.name} --ylim 1.0
+        """
