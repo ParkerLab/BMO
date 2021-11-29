@@ -40,7 +40,7 @@ git clone https://github.com/ParkerLab/BMO.git
 ```
 
 ## Create and activate BMO base environment
-BMO was designed to run using [Snakemake](https://snakemake.readthedocs.io), an extremely powerful tool for running reproducible pipelines. The command below will create a base conda environment with snakemake and mamba to handle dependencies. All the other dependencies will be handled interanally by snakemake.
+BMO was designed to run using [Snakemake](https://snakemake.readthedocs.io), an extremely powerful tool for running reproducible pipelines. The command below will create a base conda environment with snakemake and mamba to handle dependencies. All the other dependencies will be handled internally by snakemake.
 **Requirements**: Having a working [Anaconda](https://docs.anaconda.com/anaconda/install/) or [Miniconda](https://conda.io/docs/user-guide/install/index.html) installation in your system.
 
 ```sh
