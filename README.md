@@ -1,6 +1,9 @@
 # Parker Lab BMO
 [![DOI](https://zenodo.org/badge/136372329.svg)](https://zenodo.org/badge/latestdoi/136372329)
 
+**NEW**: For users interested in our **chromatin information pipeline (f-VICE scores)**, it is now available in the [pre 1.1 branch of this repository](https://github.com/ParkerLab/BMO/tree/pre-1.1)! Please let us know if you encounter any bugs via the Issues tab or emailing dricardo@wustl.edu.
+
+## Index
 - [Overview](#overview)
   * [Algorithm overview](#algorithm-overview)
 - [Installation](#installation)
