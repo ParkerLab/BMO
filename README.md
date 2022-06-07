@@ -36,7 +36,7 @@ Installation time: less than 5 minutes.
 
 From your machine, run the command below wherever you want BMO's main directory to be (*e.g.* `~/software`).
 ```sh
-git clone https://github.com/ParkerLab/BMO.git
+git clone -b pre-1.1 https://github.com/ParkerLab/BMO.git
 ```
 
 ## Create and activate BMO base environment
